@@ -1,17 +1,3 @@
-# CMake build files
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-
 # Build output
 build/ # Assuming you build in a build subdir
-*.o
-*.obj
-*.so
-*.dylib
-*.dll
-*.exe
-vote_ensemble_app # Your executable name
 
-# Storage directories (if applicable)
