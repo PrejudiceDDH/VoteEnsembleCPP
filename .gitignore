@@ -1,25 +1,17 @@
-# Example using 'echo' on Linux/macOS/Git Bash
-echo "# CMake build files" > .gitignore
-echo "CMakeCache.txt" >> .gitignore
-echo "CMakeFiles/" >> .gitignore
-echo "cmake_install.cmake" >> .gitignore
-echo "Makefile" >> .gitignore
-echo "" >> .gitignore
-echo "# Build output" >> .gitignore
-echo "build/" >> .gitignore # Assuming you build in a 'build' subdir
-echo "*.o" >> .gitignore
-echo "*.obj" >> .gitignore
-echo "*.so" >> .gitignore
-echo "*.dylib" >> .gitignore
-echo "*.dll" >> .gitignore
-echo "*.exe" >> .gitignore
-echo "vote_ensemble_app" >> .gitignore # Your executable name
-echo "" >> .gitignore
-echo "# Storage directories (if applicable)" >> .gitignore
-echo "LR_storage_test/" >> .gitignore # Example from your main.cpp [cite: 1]
-echo "LP_storage_test/" >> .gitignore # Example from your main.cpp [cite: 1]
-echo "" >> .gitignore
-echo "# IDE files (optional)" >> .gitignore
-echo ".vscode/" >> .gitignore
-echo "*.swp" >> .gitignore
-echo "*~" >> .gitignore
+# CMake build files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Build output
+build/ # Assuming you build in a build subdir
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+vote_ensemble_app # Your executable name
+
+# Storage directories (if applicable)
