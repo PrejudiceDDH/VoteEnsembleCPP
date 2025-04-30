@@ -10,16 +10,16 @@
 using Sample = Eigen::MatrixXd;
 
 /**
- * A single solution of baseLearner is expressed as a vector.
- * Note that we do not use Eigen::VectorXd for Result, because it will
- * complicate the serialization in _SubsampleResultIO. Also, it will make
- * majority voting process more difficult.
+ * A single solution of baseLearner is expressed as an Eigen vector.
  */
-using Result = std::vector<double>;
+using Result = Eigen::VectorXd;
 
 // For numeric operations.
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
+
+// Size limit for Eigen variables
+constexpr Eigen::Index MAX_REASONABLE_SIZE = 10000000;
 
 // Forward declarations (optional but can reduce compile times)
 struct _BaseLearner;
@@ -31,10 +31,10 @@ class ROVE;
 
 // Utility functions for type conversions
 // Function to convert Result (std::vector<double>) to Eigen VectorXd
-Vector resultToVector(const Result &result);
+// Vector resultToVector(const Result &result);
 
 // Function to convert Eigen VectorXd to Result (std::vector<double>)
-Result vectorToResult(const Vector &vec);
+// Result vectorToResult(const Vector &vec);
 
 // Helper function to print a Result
 void printResult(const std::string &experimentName, const Result &result);

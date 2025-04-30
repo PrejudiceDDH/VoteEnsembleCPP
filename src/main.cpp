@@ -59,7 +59,9 @@ void runLPExample()
 
     // Generate data and print true result
     Sample sample = generateLPData(n, meanVector, noiseStDev, dataSeed);
-    printResult("True solution: ", {1.0, 0.0});
+    Result trueResult(2);
+    trueResult << 1.0, 0.0;
+    printResult("True solution: ", trueResult);
 
     // Instantiate the base learner
     LinearProgramLearner baseLearner;

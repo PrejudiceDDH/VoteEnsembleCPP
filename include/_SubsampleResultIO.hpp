@@ -2,9 +2,9 @@
 #include "types.hpp"
 
 #include <vector>
-#include <filesystem> // For std::filesystem::path
 #include <string>
-#include <optional> // For std::optional
+#include <filesystem> // For std::filesystem::path
+#include <optional>   // For std::optional
 
 // Forward declaration of BaseLearner
 struct BaseLearner;

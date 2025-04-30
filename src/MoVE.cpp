@@ -78,7 +78,7 @@ Result MoVE::run(const Sample &sample, int B, std::optional<int> k)
     for (size_t i = 0; i < learningResults.size(); ++i)
     {
         Result candidate1 = _loadResultIfNeeded(learningResults[i]);
-        if (candidate1.empty())
+        if (candidate1.size() == 0)
         { // Note that Result is essentially a vector
             throw std::runtime_error("MoVE::run: Empty candidate result at index " + std::to_string(i));
         }
@@ -120,7 +120,7 @@ Result MoVE::run(const Sample &sample, int B, std::optional<int> k)
 
     // 3. Finalize and clean up
     Result finalResult = _loadResultIfNeeded(learningResults[maxIndex]);
-    if (finalResult.empty())
+    if (finalResult.size() == 0)
     {
         throw std::runtime_error("MoVE::run: The result of majority voting is empty.");
     }

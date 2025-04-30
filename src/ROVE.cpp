@@ -292,7 +292,7 @@ Result ROVE::run(const Sample &sample,
 
     // 3. Finalize and clean up (similar as MoVE)
     Result finalResult = _loadResultIfNeeded(retrievedResults[bestCandidateIndex]);
-    if (finalResult.empty())
+    if (finalResult.size() == 0)
     {
         throw std::runtime_error("ROVE::run: The result of epsilon-optimal voting is empty.");
     }

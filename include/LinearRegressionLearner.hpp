@@ -2,9 +2,8 @@
 #include "BaseLearner.hpp"
 #include "types.hpp"
 
-#include <vector>
 #include <Eigen/Dense>
-#include <utility>
+#include <utility>      // For std::pair
 
 // Overload the BaseLearner class for linear regression
 class LinearRegressionLearner : public BaseLearner

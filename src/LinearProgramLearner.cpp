@@ -20,14 +20,18 @@ Result LinearProgramLearner::learn(const Sample &sample)
 
     double mean_xi1 = sample.col(0).mean(); // Mean of the first column
     double mean_xi2 = sample.col(1).mean(); // Mean of the second column
+
+    Result solution(2);
     if (mean_xi1 < mean_xi2)
     {
-        return {1.0, 0.0}; // x* = [1, 0], will be automatically converted to Result, which is a vector of doubles.
+        solution << 1.0, 0.0; // x* = [1, 0], will be automatically converted to Result, which is a vector of doubles.
     }
     else
     {
-        return {0.0, 1.0}; // x* = [0, 1]
+        solution << 0.0, 1.0; // x* = [0, 1]
     }
+
+    return solution;
 }
 
 Matrix LinearProgramLearner::objective(const Result &learningResult, const Sample &sample) const
@@ -42,9 +46,7 @@ Matrix LinearProgramLearner::objective(const Result &learningResult, const Sampl
         throw std::invalid_argument("LinearProgramLearner::objective: Learning result must have exactly two elements");
     }
 
-    Vector learningResultVector = resultToVector(learningResult);
-
-    return sample * learningResultVector; // Returns a matrix of size (num_samples, 1)
+    return sample * learningResult; // Returns a matrix of size (num_samples, 1)
 }
 
 bool LinearProgramLearner::isMinimization() const
@@ -64,12 +66,7 @@ bool LinearProgramLearner::isDuplicate(const Result &result1, const Result &resu
         throw std::invalid_argument("LinearProgramLearner::isDuplicate: Results must have the same size");
     }
 
-    double diff = 0.0;
-    for (size_t i = 0; i < result1.size(); ++i)
-    {
-        diff += std::abs(result1[i] - result2[i]);
-    }
-    return diff < tolerance; // Whether the (elementwise) solution difference is within the tolerance.
+    return (result1 - result2).lpNorm<1>() < tolerance; // Use the L1-distance between two vectors to check for duplicates.
 }
 
 Sample generateLPData(size_t n, const std::vector<double> &meanVector, double noiseStDev, unsigned int seed)
@@ -83,7 +80,8 @@ Sample generateLPData(size_t n, const std::vector<double> &meanVector, double no
 
     Sample sample(n, 2);
     // Fill with noise first (use NullaryExpr and lambda)
-    sample = Sample::NullaryExpr(n, 2, [&]() { return noiseDist(rng); }); 
+    sample = Sample::NullaryExpr(n, 2, [&]()
+                                 { return noiseDist(rng); });
     // Then add the mean vector
     Eigen::RowVectorXd meanRow(2);
     meanRow << meanVector[0], meanVector[1];

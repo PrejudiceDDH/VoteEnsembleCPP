@@ -43,7 +43,7 @@ protected: // Ensure those members are accessible to derived classes (MoVE and R
     // Ensure the output is Result. If the input is the index, load the result from external storage.
     Result _loadResultIfNeeded(const std::variant<Result, int> &resultOrIndex);
 
-    // Main learning method, run baseLearner on B subsamples of size k (the most important method in _BaseVE)
+    // Main learning method, run baseLearner on B subsamples of size k.
     // Return a vector of Result or int (index of the result).
     std::vector<std::variant<Result, int>> _learnOnSubsamples(const Sample &sample, int k, int B);
 

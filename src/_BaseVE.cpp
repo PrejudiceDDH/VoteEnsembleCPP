@@ -61,10 +61,6 @@ Result _BaseVE::_loadResultIfNeeded(const std::variant<Result, int> &resultOrInd
         {
             throw std::runtime_error("_BaseVE::_loadResultIfNeeded: _subsampleResultIO is not initialized.");
         }
-        else if (!_subsampleResultIO->isExternalStorateEnabled())
-        {
-            throw std::runtime_error("_BaseVE::_loadResultIfNeeded: External storage is not enabled.");
-        }
         int index = std::get<int>(resultOrIndex);
         return _subsampleResultIO->_loadSubsampleResult(index);
     }
