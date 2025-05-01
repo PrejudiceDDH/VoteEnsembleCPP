@@ -43,7 +43,7 @@ private:
      * Note that the map structure is required, otherwise we cannot easily associate
      * the evaluation results with the corresponding sample indices in _sample.
      */
-    std::unordered_map<int, Vector> _cachedEvaluation;
+    std::unordered_map<int, RowVector> _cachedEvaluation;
 
     /**
      * Helper function used to load a specific solution from the storage.

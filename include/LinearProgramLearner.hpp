@@ -25,8 +25,8 @@ public:
     // Destructor
     ~LinearProgramLearner() override = default;
 
-    // --- Core Learning Methods ---
     /**
+     * Core learning methods
      * Solve the linear program by comparing the sample means of \xi_1 and \xi_2.
      * The sample is a matrix of size (n, 2).
      */

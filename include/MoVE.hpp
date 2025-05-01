@@ -19,12 +19,11 @@ public:
      // Destructor
      ~MoVE() override = default;
 
-     // Public methods
-     // Specific run algorithm with all parameters specified
+     // run method with all parameters specified
      virtual Result run(const Sample &sample,
                         int B = 50,
                         std::optional<int> k = std::nullopt);
 
-     // Overide the run method from _BaseVE (run under default parameters)
+     // Override the run method from _BaseVE (run under default parameters)
      Result run(const Sample &sample) override;
 };

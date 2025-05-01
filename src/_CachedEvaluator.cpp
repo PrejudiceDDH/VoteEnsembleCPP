@@ -186,7 +186,7 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
         for (size_t i = 0; i < workerSampleIndices.size(); ++i)
         {
             int sampleIndex = workerSampleIndices[i];
-            _cachedEvaluation[sampleIndex] = workerResults.row(i).transpose();
+            _cachedEvaluation[sampleIndex] = workerResults.row(i);
         }
     } // End of the loop over workers
 
@@ -196,7 +196,7 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
     for (int b = 0; b < B; ++b)
     {
         // Sum objective values among all samples in the batch
-        Vector sumResultsForBatch = Vector::Zero(numCandidates);
+        RowVector sumResultsForBatch = RowVector::Zero(numCandidates);
         int subsampleSize = 0;
         const std::vector<int> &sampleIndicesToSum = subsampleIndices[b];
 
@@ -217,8 +217,8 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
 
         if (subsampleSize > 0)
         {
-            Vector avgResultsForBatch = sumResultsForBatch / static_cast<double>(subsampleSize); // Average
-            evalResultsToReturn.row(b) = avgResultsForBatch.transpose();
+            RowVector avgResultsForBatch = sumResultsForBatch / static_cast<double>(subsampleSize); // Average
+            evalResultsToReturn.row(b) = avgResultsForBatch;
         }
         else if (k > 0)
         {

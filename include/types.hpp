@@ -21,6 +21,7 @@ using Result = Eigen::VectorXd;
  */
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
+using RowVector = Eigen::RowVectorXd;
 
 // Size limit for Eigen variables
 constexpr Eigen::Index MAX_REASONABLE_SIZE = 10000000;

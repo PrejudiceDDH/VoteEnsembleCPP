@@ -169,7 +169,7 @@ std::vector<std::variant<Result, int>> _BaseVE::_learnOnSubsamples(const Sample 
     }
     catch (const std::exception &e)
     {
-        throw std::runtime_error("_BaseVE::_learnOnSubsamples: Error while collecting results: " + 
+        throw std::runtime_error("_BaseVE::_learnOnSubsamples: Error while collecting results: " +
                                  std::string(e.what()));
     }
 

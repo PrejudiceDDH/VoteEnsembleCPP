@@ -40,7 +40,7 @@ protected: // Ensure those members are accessible to derived classes (MoVE and R
     bool _deleteSubsampleResults;
 
     /**
-     * Helper function to to get a candidate as Result.
+     * Helper function to to get a candidate solution as Result.
      * Ensure the output is Result. If the input is the index, load the result from external storage.
      */
     Result _loadResultIfNeeded(const std::variant<Result, int> &resultOrIndex);

@@ -4,7 +4,7 @@
 #include "ROVE.hpp"
 
 #include <string>
-#include <optional>    // For std::optional
+#include <optional> // For std::optional
 
 // Function to run MoVE with specified parameters and results printing
 void runMoVE(
@@ -13,7 +13,7 @@ void runMoVE(
     const Sample &sample,
     int numThreads,
     unsigned int seed,
-    const std::optional<std::string>& subsampleResultsDir = std::nullopt, // Default to no external storage.
+    const std::optional<std::string> &subsampleResultsDir = std::nullopt, // Default to no external storage.
     bool deleteSubsampleResults = true,
     int B = 200,
     std::optional<int> k = std::nullopt);
@@ -26,7 +26,7 @@ void runROVE(
     bool dataSplit,
     int numThreads,
     unsigned int seed,
-    const std::optional<std::string>& subsampleResultsDir = std::nullopt, // Default to no external storage.
+    const std::optional<std::string> &subsampleResultsDir = std::nullopt, // Default to no external storage.
     bool deleteSubsampleResults = true,
     int B1 = 50,
     int B2 = 200,

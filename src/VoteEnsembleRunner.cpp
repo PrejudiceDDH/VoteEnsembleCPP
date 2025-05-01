@@ -32,8 +32,7 @@ void runMoVE(
     }
 
     try
-    {
-        // We write {seed} instead of seed because the declared type is std::optional
+    { // We write {seed} instead of seed because the declared type is std::optional
         MoVE move(baseLearnerPtr, numThreads, {seed}, subsampleResultsDir, deleteSubsampleResults);
         Result sampleBasedSolution = move.run(sample, B, k);
         printResult(experimentName + " sample-based solution: ", sampleBasedSolution);
@@ -78,9 +77,7 @@ void runROVE(
     }
 
     try
-    {
-        // numThreads for both learning and evaluation
-        // We write {seed} instead of seed because the declared type is std::optional
+    { // numThreads for both learning and evaluation
         ROVE rove(baseLearnerPtr, dataSplit, numThreads, numThreads, {seed}, subsampleResultsDir, deleteSubsampleResults);
         Result estimatedBeta = rove.run(sample, B1, B2, k1, k2, epsilon, autoEpsilonProb);
 

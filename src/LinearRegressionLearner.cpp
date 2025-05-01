@@ -7,7 +7,7 @@
 #include <iostream>    // For std::cerr (error reporting)
 #include <random>      // For C++ random number generation
 
-// Implementation of core learning methods
+// Core learning methods
 Result LinearRegressionLearner::learn(const Sample &sample)
 {
     if (sample.rows() == 0 || sample.cols() < 2)
@@ -23,34 +23,34 @@ Result LinearRegressionLearner::learn(const Sample &sample)
     Vector beta(p);
 
     if (n < p)
-    { // Must be rank deficient, throw a warning and use pseudo-inverse
-        std::cerr << "LinearRegressionLearner::learn: Number of samples: " << n << " is less than number of features: "
-                  << p << ". Psedo-inverse will be used." << std::endl;
-
-        // Compute SVD of X using BDCSVD.
+    {
         /**
-         * Declares a BDCSVD object and factors X into U\Sigma*V^T.
+         * Must be rank deficient, throw a warning and use pseudo-inverse instead.
+         * Compute SVD of X using BDCSVD. Declares a BDCSVD object and factors X into U\Sigma*V^T.
          * Compute the thin version of U and V, i.e., if n < p, then U is of size (n, p)
          * and V is of size (p, p). Otherwise, U is of size (n, n) and V is of size (p, n).
          */
+        std::cerr << "LinearRegressionLearner::learn: Number of samples: " << n << " is less than number of features: "
+                  << p << ". Psedo-inverse will be used." << std::endl;
         Eigen::BDCSVD<Matrix> svd(X, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-        // Solve X * beta = Y using the computed SVD
         /**
+         * Solve X * beta = Y using the computed SVD
          * svd.solve(Y) computes the least-squares solution to the linear system X * beta = Y.
          */
         beta = svd.solve(Y);
     }
     else
-    { // Use normal equation and Cholesky decomposition
-        // This is usually faster than SVD when n is large.
+    {
+        /**
+         * Use normal equation and Cholesky decomposition
+         * This is usually faster than SVD when n is large.
+         */
         beta = (X.transpose() * X).ldlt().solve(X.transpose() * Y);
     }
 
     if (!beta.allFinite())
-    {
         throw std::runtime_error("LinearRegressionLearner::learn: Computed beta contains non-finite values.");
-    }
 
     return beta;
 }
@@ -58,14 +58,10 @@ Result LinearRegressionLearner::learn(const Sample &sample)
 Vector LinearRegressionLearner::objective(const Result &learningResult, const Sample &sample) const
 {
     if (sample.rows() == 0 || sample.cols() < 2)
-    {
         throw std::invalid_argument("LinearRegressionLearner::objective: Sample must be nonempty and have at least one feature and one label");
-    }
 
     if (learningResult.size() != sample.cols() - 1)
-    {
         throw std::invalid_argument("LinearRegressionLearner::objective: Learning result size does not match the number of features.");
-    }
 
     // Data extraction (note that learningResult itself is beta)
     Matrix X = sample.rightCols(sample.cols() - 1);
@@ -74,10 +70,9 @@ Vector LinearRegressionLearner::objective(const Result &learningResult, const Sa
     // Compute the predicted values
     Vector Y_pred = X * learningResult;
 
-    // Compute the MSE
+    // Compute and return the MSE
     Vector residuals = Y - Y_pred;
-
-    return residuals.array().square(); // Compute the MSE vector
+    return residuals.array().square();
 }
 
 bool LinearRegressionLearner::isMinimization() const

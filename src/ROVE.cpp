@@ -5,11 +5,11 @@
 #include "_SubsampleResultIO.hpp"
 #include "types.hpp"
 
-#include <stdexcept>
 #include <vector>
-#include <optional>
 #include <string>
-#include <variant>
+#include <stdexcept> // For std::invalid_argument, std::runtime_error
+#include <optional>  // For std::optional
+#include <variant>   // For std::variant
 #include <numeric>   // For std::iota
 #include <algorithm> // For std::min, std::max, std::shuffle
 #include <cmath>     // For std::floor, std::abs, std::pow? (No, Eigen handles math)
@@ -29,12 +29,10 @@ ROVE::ROVE(BaseLearner *baseLearner,
       _numParallelEval(std::max(1, numParallelEval))
 {
     if (!_baseLearner)
-    {
         throw std::invalid_argument("ROVE constructor: baseLearner cannot be null");
-    }
 }
 
-// Private helper method to compute the gap matrix
+// Helper method to compute the gap matrix
 Matrix ROVE::_gapMatrix(const Matrix &evalArray)
 {
     if (evalArray.rows() == 0 || evalArray.cols() == 0)
@@ -55,14 +53,13 @@ Matrix ROVE::_gapMatrix(const Matrix &evalArray)
     {
         // In a maximization problem, the gap = max(objectives in the same row) - objective
         Vector bestObj = evalArray.rowwise().maxCoeff().eval(); // Compute the rowwise maximum
-        gapMatrix = -1 * (evalArray.colwise() - bestObj);                // Note that bestObj - evalArray.colwise() is not enabled by Eigen
+        gapMatrix = -1 * (evalArray.colwise() - bestObj);       // Note that bestObj - evalArray.colwise() is not enabled by Eigen
     }
     return gapMatrix;
 }
 
-// Public methods
-// Static helper method to compute the epsilon-optimal probability
-Matrix ROVE::_epsilonOptimalProb(const Matrix &gapMatrix, double epsilon)
+// Static helper method to compute the probability of each candidate being epsilon-optimal
+RowVector ROVE::_epsilonOptimalProb(const Matrix &gapMatrix, double epsilon)
 {
     if (gapMatrix.rows() == 0 || gapMatrix.cols() == 0)
     {
@@ -76,6 +73,7 @@ Matrix ROVE::_epsilonOptimalProb(const Matrix &gapMatrix, double epsilon)
     return (gapMatrix.array() <= epsilon).cast<double>().colwise().mean();
 }
 
+// Helper method to choose appropriate epsilon for making the epsilon-optimal probability
 double ROVE::_findEpsilon(const Matrix &gapMatrix, double autoEpsilonProb)
 {
     if (gapMatrix.rows() == 0 || gapMatrix.cols() == 0)
@@ -88,9 +86,13 @@ double ROVE::_findEpsilon(const Matrix &gapMatrix, double autoEpsilonProb)
         throw std::invalid_argument("ROVE::_findEpsilon: autoEpsilonProb must be in [0, 1]");
     }
 
-    Matrix probArray = _epsilonOptimalProb(gapMatrix, 0.0); // Get the probability of each candidate being optimal
-    // If the maximum probability is already greater than or equal to autoEpsilonProb, we do not need to allow epsilon relaxation
-    // Note that we do not need to worry about probArray being empty, since we already check gapMatrix
+    // Get the probability of each candidate being optimal
+    RowVector probArray = _epsilonOptimalProb(gapMatrix, 0.0);
+    /**
+     * If the maximum probability is already greater than or equal to autoEpsilonProb,
+     * we do not need to allow epsilon relaxation.
+     * Note that we do not need to worry about probArray being empty, since we already check gapMatrix
+     */
     if (probArray.maxCoeff() >= autoEpsilonProb)
     {
         return 0.0;
@@ -107,11 +109,12 @@ double ROVE::_findEpsilon(const Matrix &gapMatrix, double autoEpsilonProb)
         probArray = _epsilonOptimalProb(gapMatrix, right);
     }
 
-    // Perform line search to find the smallest epsilon that makes the maximum epsilon-optimal probability
-    // greater than or equal to autoEpsilonProb
+    /**
+     * Perform line search to find the smallest epsilon that makes the maximum epsilon-optimal probability
+     * greater than or equal to autoEpsilonProb
+     */
     double tolerance = 1e-3;
-    while (std::max(right - left,
-                    (right - left) / (std::abs(left) / 2.0 + std::abs(right) / 2.0 + 1e-5)) > tolerance)
+    while (std::max(right - left, (right - left) / (std::abs(left) / 2.0 + std::abs(right) / 2.0 + 1e-5)) > tolerance)
     {
         double mid = (left + right) / 2.0;
         probArray = _epsilonOptimalProb(gapMatrix, mid);
@@ -124,11 +127,10 @@ double ROVE::_findEpsilon(const Matrix &gapMatrix, double autoEpsilonProb)
             left = mid; // Move the left bound to mid
         }
     }
-
     return right;
 }
 
-// Main run algorithm with all parameters specified
+// run method with all parameters specified
 Result ROVE::run(const Sample &sample,
                  int B1, int B2,
                  std::optional<int> k1, std::optional<int> k2,
@@ -137,13 +139,9 @@ Result ROVE::run(const Sample &sample,
 
     long long nTotal = sample.rows();
     if (nTotal == 0)
-    {
         throw std::invalid_argument("ROVE::run: Sample size n must be greater than 0.");
-    }
     if (B1 <= 0 || B2 <= 0)
-    {
         throw std::invalid_argument("ROVE::run: Number of subsamples B1 and B2 must be positive.");
-    }
 
     // Determine sample sizes for two phases, depending on _dataSplit
     long long phaseOneEnd = nTotal;
@@ -158,7 +156,7 @@ Result ROVE::run(const Sample &sample,
     {
         throw std::invalid_argument("ROVE::run: Insufficient sample size n = " + std::to_string(nTotal));
     }
-    long long n1 = phaseOneEnd;    
+    long long n1 = phaseOneEnd;
     long long n2 = nTotal - phaseTwoStart;
 
     // Determine k1 and B1 for Phase I
@@ -179,8 +177,7 @@ Result ROVE::run(const Sample &sample,
         }
     }
     else
-    {
-        // Choose k1 = min(max(30, n1 / divisor), n1)}. The value of divisor depends on whether we deal with duplicates.
+    { // Choose k1 = min(max(30, n1 / divisor), n1)}. The value of divisor depends on whether we deal with duplicates.
         int divisor = _baseLearner->enableDeduplication() ? 200 : 2;
         k1Val = static_cast<int>(std::min(static_cast<long long>(std::max(30, static_cast<int>(n1 / divisor))), n1));
     }
@@ -203,8 +200,7 @@ Result ROVE::run(const Sample &sample,
         }
     }
     else
-    {
-        // Choose k2 = min(max(30, n2 / 200), n2)
+    { // Choose k2 = min(max(30, n2 / 200), n2)
         k2Val = static_cast<int>(std::min(static_cast<long long>(std::max(30, static_cast<int>(n2 / 200))), n2));
     }
 
@@ -244,12 +240,12 @@ Result ROVE::run(const Sample &sample,
     }
 
     if (retrievedResults.empty())
-    {
         throw std::runtime_error("ROVE::run: No learning results obtained during Phase I.");
-    }
 
-    // 2. Phase II: Epsilon-optimal voting.
-    // unique_ptr.get() is used to get the raw pointer from the unique_ptr
+    /**
+     * 2. Phase II: Epsilon-optimal voting.
+     * unique_ptr.get() is used to get the raw pointer from the unique_ptr
+     */
     _CachedEvaluator cachedEvaluator(_baseLearner, _subsampleResultIO.get(), retrievedResults, sample, _numParallelEval);
 
     // Get sample indices for Phase II
@@ -280,15 +276,14 @@ Result ROVE::run(const Sample &sample,
         }
     }
 
-    // Compute the epsilon-optimal probability and get the candidate with the maximum probability
-    // When retrievedResults is not empty, probArray is a row vector of size (1, num_candidates)
-    Matrix probArray = _epsilonOptimalProb(gapMatrixPhaseTwo, epsilon);
-    // Note that probArray is a matrix of size (1, num_candidates), so we need a nullIndex to
-    // fill in the first dimension when using maxCoeff method.
-    Eigen::Index nullIndex;
+    /**
+     * Compute the epsilon-optimal probability and get the candidate with the maximum probability
+     * When retrievedResults is not empty, probArray is a row vector of size (1, num_candidates)
+     */
+    RowVector probArray = _epsilonOptimalProb(gapMatrixPhaseTwo, epsilon);
     Eigen::Index bestCandidateIndex;
     // Use the Eigen method to get the index of the maximum element
-    probArray.maxCoeff(&nullIndex, &bestCandidateIndex);
+    probArray.maxCoeff(&bestCandidateIndex);
 
     // 3. Finalize and clean up (similar as MoVE)
     Result finalResult = _loadResultIfNeeded(retrievedResults[bestCandidateIndex]);
@@ -317,7 +312,6 @@ Result ROVE::run(const Sample &sample,
             _subsampleResultIO->_deleteSubsampleResult(indicesToDelete);
         }
     }
-
     return finalResult;
 }
 

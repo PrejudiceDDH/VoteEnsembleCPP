@@ -12,10 +12,10 @@ public:
     // Constructor
     LinearRegressionLearner() = default;
 
-    // Destructor (need to override)
+    // Destructor
     ~LinearRegressionLearner() override = default;
 
-    // --- Core Learning Methods ---
+    // Core learning methods
     /**
      * Learn a linear regression model on the given sample.
      * Suppose the sample is a matrix of size (n, p+1), where n is the number of samples
@@ -23,7 +23,7 @@ public:
      */
     Result learn(const Sample &sample) override;
 
-    // Returns a matrix of size (num_samples, 1)
+    // Returns a vector of size num_samples
     Vector objective(const Result &learningResult, const Sample &sample) const override;
 
     bool isMinimization() const override;
