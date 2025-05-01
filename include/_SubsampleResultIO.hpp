@@ -25,7 +25,10 @@ public:
     _SubsampleResultIO(BaseLearner *baseLearner,
                        const std::optional<std::string> &subsampleResultsDir);
 
-    // Public IO methods (they are not static because they may need access to the baseLearner, which is a private member)
+    /**
+     * Public IO methods
+     * They are not static because they may need access to the baseLearner, which is a private member
+     */
     // Creates the directory.
     void _prepareSubsampleResultDir();
 
@@ -38,7 +41,6 @@ public:
     // Delete the learning result files for the given indices.
     void _deleteSubsampleResult(const std::vector<int> &indexList);
 
-    // Utility methods for C++
     // True if results should be saved to/loaded from disk.
     bool isExternalStorateEnabled() const;
 

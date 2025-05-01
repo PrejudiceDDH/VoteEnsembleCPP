@@ -2,11 +2,11 @@
 #include "types.hpp"
 
 #include <vector>
-#include <random> // For std::mt19937
 #include <string>
-#include <optional>
-#include <memory>  // For std::unique_ptr
-#include <variant> // For std::variant
+#include <optional> // For std::optional
+#include <random>   // For std::mt19937
+#include <memory>   // For std::unique_ptr
+#include <variant>  // For std::variant
 
 // Forward declaration of classes
 struct BaseLearner;
@@ -19,33 +19,36 @@ class _SubsampleResultIO; // Used in _learnOnSubsamples and _loadResultIfNeeded
  */
 class _BaseVE
 {
-protected: // Ensure those members are accessible to derived classes (MoVE and ROVE)
-    // Protected variables
-    // Pointer to the base learner
+protected: // Ensure those members are accessible to derived classes (MoVE and ROVE).
+    // Pointer to the base learner.
     BaseLearner *_baseLearner;
 
-    // Number of parallel learners
+    // Number of parallel learners.
     int _numParallelLearn;
 
-    // Random number generator
+    // Random number generator.
     std::mt19937 _rng;
     unsigned int _randomSeed;
 
-    // Pointer to the subsample result IO object
+    // Pointer to the _SubsampleResultIO class, which can be used by derived classes.
     std::unique_ptr<_SubsampleResultIO> _subsampleResultIO;
 
-    // Flag to indicate whether to delete subsample results
-    // This is used in MoVE and ROVE. Will not be used in _BaseVE.
+    /**
+     * Flag to indicate whether to delete intermediate computation results.
+     * This is only used in derived classes (MoVE and ROVE).
+     */
     bool _deleteSubsampleResults;
 
-    // Protected methods
-
-    // Helper function to work with isExternalStorateEnabled in _SubsampleResultIO.
-    // Ensure the output is Result. If the input is the index, load the result from external storage.
+    /**
+     * Helper function to to get a candidate as Result.
+     * Ensure the output is Result. If the input is the index, load the result from external storage.
+     */
     Result _loadResultIfNeeded(const std::variant<Result, int> &resultOrIndex);
 
-    // Main learning method, run baseLearner on B subsamples of size k.
-    // Return a vector of Result or int (index of the result).
+    /**
+     * Main learning method, run baseLearner on B subsamples of size k.
+     * Return a vector of Result or int (index of the result).
+     */
     std::vector<std::variant<Result, int>> _learnOnSubsamples(const Sample &sample, int k, int B);
 
 public:
@@ -56,8 +59,8 @@ public:
             const std::optional<std::string> &subsampleResultsDir = std::nullopt,
             bool deleteSubsampleResults = true);
 
-    // Virtual destructor
     /**
+     * Virtual destructor
      * Note: We cannot use default here, and can only write the implementation in cpp file.
      * The reason is that when the compiler processes _BaseVE.hpp, it may only see the forward
      * declaration of _SubsampleResultIO, instead of the full definition. So, it will cause the
@@ -65,9 +68,9 @@ public:
      */
     virtual ~_BaseVE();
 
-    // Public methods
+    // Reset the random seed (currently not used in MoVE and ROVE)
     void resetRandomSeed();
 
-    // Specific run algorithm (to be implemented in derived classes, the default case)
+    // Run the algorithm with default parameters (to be implemented in derived classes)
     virtual Result run(const Sample &sample) = 0;
 };

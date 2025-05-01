@@ -25,7 +25,7 @@ using Vector = Eigen::VectorXd;
 // Size limit for Eigen variables
 constexpr Eigen::Index MAX_REASONABLE_SIZE = 10000000;
 
-// Forward declarations (optional but can reduce compile times)
+// Forward declarations (optional)
 struct _BaseLearner;
 class _SubsampleResultIO;
 class _CachedEvaluator;
