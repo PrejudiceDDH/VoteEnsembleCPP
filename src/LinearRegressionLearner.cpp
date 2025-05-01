@@ -55,7 +55,7 @@ Result LinearRegressionLearner::learn(const Sample &sample)
     return beta;
 }
 
-Matrix LinearRegressionLearner::objective(const Result &learningResult, const Sample &sample) const
+Vector LinearRegressionLearner::objective(const Result &learningResult, const Sample &sample) const
 {
     if (sample.rows() == 0 || sample.cols() < 2)
     {
@@ -76,9 +76,8 @@ Matrix LinearRegressionLearner::objective(const Result &learningResult, const Sa
 
     // Compute the MSE
     Vector residuals = Y - Y_pred;
-    Vector mse = residuals.array().square().matrix(); // Get element-wise square
 
-    return mse; // mse is a matrix of size (num_samples, 1)
+    return residuals.array().square(); // Compute the MSE vector
 }
 
 bool LinearRegressionLearner::isMinimization() const

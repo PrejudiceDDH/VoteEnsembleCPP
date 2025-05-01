@@ -32,7 +32,7 @@ public:
      */
     Result learn(const Sample &sample) override;
 
-    Matrix objective(const Result &learningResult, const Sample &sample) const override;
+    Vector objective(const Result &learningResult, const Sample &sample) const override;
 
     bool isMinimization() const override;
 

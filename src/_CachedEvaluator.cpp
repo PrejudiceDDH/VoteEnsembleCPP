@@ -4,7 +4,7 @@
 #include "types.hpp"
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <variant>    // For std::variant
 #include <stdexcept>  // For exceptions
 #include <algorithm>  // For std::shuffle, std::min, std::max
@@ -73,18 +73,17 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
 
     size_t numCandidates = _subsampleResultList.size();
     std::set<int> sampleToEvaluateSet;                      // Store unique individual samples to be evaluated on
-    std::vector<int> sampleIndexListCopy = sampleIndexList; // Make a copy, so we can shuffle it
+    std::vector<std::vector<int>> subsampleIndices(B);      // B sets of subsample indices
 
     // Fill the subsample indices and record the unique samples
-    std::vector<std::vector<int>> subsampleIndices(B); // B sets of subsample indices
     for (int b = 0; b < B; ++b)
     {
-        std::shuffle(sampleIndexListCopy.begin(), sampleIndexListCopy.end(), rng); // Shuffle base indices
         subsampleIndices[b].reserve(k);
-        for (int i = 0; i < k; ++i)
+        // Sample k indices from sampleIndexList
+        std::sample(sampleIndexList.begin(), sampleIndexList.end(), std::back_inserter(subsampleIndices[b]), k, rng); 
+
+        for (int sampleIndex : subsampleIndices[b])
         {
-            int sampleIndex = sampleIndexListCopy[i];
-            subsampleIndices[b].push_back(sampleIndex);
             sampleToEvaluateSet.insert(sampleIndex); // Note that we do not need to check for duplicates
         }
     }
@@ -99,21 +98,22 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
     int numWorkers = std::min(_numParallelLearn, static_cast<int>(sampleToEvaluate.size()));
     // One worker is responsible for evaluating all candidates on a subset of samples
     // In the inside vector, each element corresponds to the evaluation of one solution on a subset of samples.
-    std::vector<std::future<std::vector<Matrix>>> futures;
+    std::vector<std::future<Matrix>> futures;
     futures.reserve(numWorkers);
 
-    auto taskLambda = [&](int workerId, const std::vector<int> &workerSampleIndices)
-        -> std::vector<Matrix> // Returns a vector of size numCandidates, each element has size taskPerWorker * 1.
+    /**
+     * The following lambda function is used to evaluate all candidates on a subset of samples assigned to the worker.
+     * Returns a Matrix of size numSamplesAssigned x numCandidates.
+     */
+    auto taskLambda = [&](int workerId, const std::vector<int> &workerSampleIndices) -> Matrix
     {
-        size_t numCandidates = _subsampleResultList.size();
-        std::vector<Matrix> workerResults;
-        workerResults.reserve(numCandidates);
-
-        if (workerSampleIndices.empty())
+        size_t numSamplesAssigned = workerSampleIndices.size();
+        if (numSamplesAssigned == 0)
         {
-            return workerResults; // No samples to evaluate
+            throw std::invalid_argument("_CachedEvaluator::_evaluateSubsamples: Worker " + std::to_string(workerId) + " has no samples to evaluate.");
         }
 
+        Matrix workerResults(numSamplesAssigned, numCandidates);
         Eigen::Map<const Eigen::VectorXi> workerSampleIndicesMap(workerSampleIndices.data(), workerSampleIndices.size());
         Sample workerSampleData = _sample(workerSampleIndicesMap, Eigen::all); // Create a matrix by selecting rows from sample
 
@@ -121,15 +121,13 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
         for (size_t c = 0; c < numCandidates; ++c)
         {
             Result candidate = _loadCandidate(c);
-            Matrix evalResult = _baseLearner->objective(candidate, workerSampleData);
+            Vector evalResult = _baseLearner->objective(candidate, workerSampleData);
             // Sanity check the size of evalResult
-            if (evalResult.rows() != static_cast<Eigen::Index>(workerSampleIndices.size()) ||
-                evalResult.cols() != 1)
+            if (evalResult.size() != static_cast<Eigen::Index>(numSamplesAssigned))
             {
-                throw std::runtime_error("BaseLearner::objective returned unexpected dimensions in worker " + std::to_string(workerId) + ". Expected (" + std::to_string(workerSampleData.rows()) + " x 1), got (" + std::to_string(evalResult.rows()) + " x " + std::to_string(evalResult.cols()) + ").");
+                throw std::runtime_error("BaseLearner::objective returned unexpected size in worker " + std::to_string(workerId) + ". Expected " + std::to_string(workerSampleData.rows()) + ", got " + std::to_string(evalResult.size()) + ".");
             }
-
-            workerResults.push_back(std::move(evalResult));
+            workerResults.col(c) = evalResult;
         }
         return workerResults;
     }; // End of taskLambda
@@ -156,9 +154,11 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
         startIndex = endIndex;
     }
 
-    // Collect results from all workers. Dimension of allResults is numWorkers x numCandidates x Matrix
-    // Each Matrix has size (numWorkerSamples, 1)
-    std::vector<std::vector<Matrix>> allResults;
+    /**
+     * Collect results from all workers. Dimension of allResults is numWorkers x (numSamplesAssigned x numCandidates)
+     * numSamplesAssigned can be slightly different for each worker
+     */
+    std::vector<Matrix> allResults;
     allResults.reserve(futures.size());
 
     try
@@ -176,40 +176,31 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
     for (size_t workerId = 0; workerId < allResults.size(); ++workerId)
     {
         const auto &workerSampleIndices = allWorkerSampleIndices[workerId]; // Indices of samples evaluated by this worker
-        const auto &workerResults = allResults[workerId];                   // Results from this worker, should be a vector of size numCandidates
-        if (workerResults.size() != numCandidates)
+        const Matrix &workerResults = allResults[workerId];                 // Results from this worker, should be a Matrix of size (numSamplesAssigned, numCandidates)
+        if (workerResults.rows() != static_cast<Eigen::Index>(workerSampleIndices.size()) ||
+            workerResults.cols() != static_cast<Eigen::Index>(numCandidates))
         {
             throw std::runtime_error("_CachedEvaluator::_evaluateSubsamples: Worker " + std::to_string(workerId) +
-                                     " returned unexpected number of results. Expected " + std::to_string(numCandidates) +
-                                     ", got " + std::to_string(workerResults.size()) + ".");
+                                     " returned unexpected result size. Expected (" + std::to_string(workerSampleIndices.size()) +
+                                     ", " + std::to_string(numCandidates) + "), got (" + std::to_string(workerResults.rows()) +
+                                     ", " + std::to_string(workerResults.cols()) + ").");
         }
 
         // For each sample evaluated by this worker
         for (size_t i = 0; i < workerSampleIndices.size(); ++i)
         {
             int sampleIndex = workerSampleIndices[i];
-
-            Matrix evalResultForSample(1, numCandidates);
-            for (size_t c = 0; c < numCandidates; ++c)
-            {
-                // workerResults[c] is a matrix (column vector) of size (numWorkerSamples, 1)
-                if (static_cast<Eigen::Index>(i) >= workerResults[c].rows())
-                {
-                    throw std::out_of_range("_CachedEvaluator::_evaluateSubsamples: Sample index out of range for worker " + std::to_string(workerId) + ". Expected index " + std::to_string(i) + ", but got " + std::to_string(workerResults[c].rows()) + ".");
-                }
-
-                evalResultForSample(0, c) = workerResults[c](i, 0); // Get the evaluation result for this candidate
-            }
-            // Put into the cache map, the key is the sample index in _sample
-            _cachedEvaluation[sampleIndex] = std::move(evalResultForSample);
+            _cachedEvaluation[sampleIndex] = workerResults.row(i).transpose();
         }
     } // End of the loop over workers
 
     // Compute the final result using cache
     Matrix evalResultsToReturn(B, numCandidates);
+    evalResultsToReturn.setZero();
     for (int b = 0; b < B; ++b)
     {
-        Matrix sumResultsForBatch(1, numCandidates); // Sum objective values among all samples in the batch
+        // Sum objective values among all samples in the batch
+        Vector sumResultsForBatch = Vector::Zero(numCandidates);
         int subsampleSize = 0;
         const std::vector<int> &sampleIndicesToSum = subsampleIndices[b];
 
@@ -229,7 +220,8 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
 
         if (subsampleSize > 0)
         {
-            evalResultsToReturn.row(b) = sumResultsForBatch / static_cast<double>(subsampleSize); // Average
+            Vector avgResultsForBatch = sumResultsForBatch / static_cast<double>(subsampleSize); // Average
+            evalResultsToReturn.row(b) = avgResultsForBatch.transpose();
         }
         else if (k > 0)
         {
@@ -242,5 +234,5 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
         }
     }
 
-    return evalResultsToReturn; // Return the final evaluation results
+    return evalResultsToReturn;
 }

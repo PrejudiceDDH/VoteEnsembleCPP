@@ -13,6 +13,7 @@ struct BaseLearner;
 class _SubsampleResultIO; // Used in _learnOnSubsamples and _loadResultIfNeeded
 
 /**
+ * _BaseVE stands for Base VoteEnsemble, which serves as the base class for main algorithms MoVE and ROVE.
  * Note that in the current implementation, _BaseVE, MoVE, and ROVE do not
  * hold sample as a member variable. Instead, they are passed as arguments to the run method.
  */

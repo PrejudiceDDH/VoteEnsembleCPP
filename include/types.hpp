@@ -14,7 +14,11 @@ using Sample = Eigen::MatrixXd;
  */
 using Result = Eigen::VectorXd;
 
-// For numeric operations.
+/**
+ * Introduce aliases for Eigen types to improve readability.
+ * Although Matrix has the same meaning as Sample and Vector has the same meaning as Result,
+ * we use these aliases to distinguish between the meaning of the variables.
+ */
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
 
@@ -28,13 +32,6 @@ class _CachedEvaluator;
 class _BaseVE;
 class MoVE;
 class ROVE;
-
-// Utility functions for type conversions
-// Function to convert Result (std::vector<double>) to Eigen VectorXd
-// Vector resultToVector(const Result &result);
-
-// Function to convert Eigen VectorXd to Result (std::vector<double>)
-// Result vectorToResult(const Vector &vec);
 
 // Helper function to print a Result
 void printResult(const std::string &experimentName, const Result &result);

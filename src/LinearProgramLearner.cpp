@@ -34,7 +34,7 @@ Result LinearProgramLearner::learn(const Sample &sample)
     return solution;
 }
 
-Matrix LinearProgramLearner::objective(const Result &learningResult, const Sample &sample) const
+Vector LinearProgramLearner::objective(const Result &learningResult, const Sample &sample) const
 {
     if (sample.rows() == 0 || sample.cols() != 2)
     {
@@ -46,7 +46,7 @@ Matrix LinearProgramLearner::objective(const Result &learningResult, const Sampl
         throw std::invalid_argument("LinearProgramLearner::objective: Learning result must have exactly two elements");
     }
 
-    return sample * learningResult; // Returns a matrix of size (num_samples, 1)
+    return sample * learningResult; // Returns a vector of size num_samples.
 }
 
 bool LinearProgramLearner::isMinimization() const

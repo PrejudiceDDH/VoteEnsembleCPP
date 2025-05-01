@@ -8,8 +8,8 @@ struct BaseLearner {
     // We make functions pure virtual to be implemented in derived classes
     virtual Result learn(const Sample& sample) = 0;
     // Evaluate a single solution on (possibly multiple) samples
-    // Returns a matrix of size (num_samples, 1)
-    virtual Matrix objective(const Result& learningResult, const Sample& sample) const = 0;
+    // Returns a vector of size num_samples
+    virtual Vector objective(const Result& learningResult, const Sample& sample) const = 0;
     virtual bool isMinimization() const = 0;
 
     // --- Deduplication Check ---

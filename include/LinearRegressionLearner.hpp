@@ -24,7 +24,7 @@ public:
     Result learn(const Sample &sample) override;
 
     // Returns a matrix of size (num_samples, 1)
-    Matrix objective(const Result &learningResult, const Sample &sample) const override;
+    Vector objective(const Result &learningResult, const Sample &sample) const override;
 
     bool isMinimization() const override;
 

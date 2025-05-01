@@ -4,7 +4,7 @@
 #include <vector>
 #include <random>  // For std::mt19937
 #include <variant> // For std::variant
-#include <map>     // For the cache (mapping data index to results)
+#include <unordered_map>     // For the cache (mapping data index to results)
 #include <string>  // For std::string (used by types.hpp)
 
 // Forward declaration of classes
@@ -31,11 +31,15 @@ private:
     // Number of parallel learners
     int _numParallelLearn;
 
-    // Cache for storing evaluation results, expressed as a map
-    // The key is the index of the sample in _sample, and the value stores
-    // the evaluation results of all candidates on that sample
-    // represented as a matrix (row vector) of size (1, num_candidates)
-    std::map<int, Matrix> _cachedEvaluation;
+    /**
+     * Cache for storing evaluation results, expressed as a map.
+     * The key is the index of the sample in _sample, and the value stores
+     * the evaluation results of all candidates on that sample, represented as 
+     * a Vector of size num_candidates. 
+     * Note that the map structure is required, otherwise we cannot easily associate 
+     * the evaluation results with the corresponding sample indices in _sample.
+     */
+    std::unordered_map<int, Vector> _cachedEvaluation;
 
     // Private methods
     // Helper function used to load a specific solution
