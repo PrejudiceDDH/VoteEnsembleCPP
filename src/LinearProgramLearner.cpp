@@ -28,7 +28,6 @@ Result LinearProgramLearner::learn(const Sample &sample)
     {
         solution << 0.0, 1.0; // x* = [0, 1]
     }
-
     return solution;
 }
 

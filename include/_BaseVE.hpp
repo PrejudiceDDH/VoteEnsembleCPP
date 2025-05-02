@@ -7,6 +7,7 @@
 #include <random>   // For std::mt19937
 #include <memory>   // For std::unique_ptr
 #include <variant>  // For std::variant
+#include <future>   // For std::async, std::future
 
 // Forward declaration of classes
 struct BaseLearner;
@@ -45,8 +46,38 @@ protected: // Ensure those members are accessible to derived classes (MoVE and R
      */
     Result _loadResultIfNeeded(const std::variant<Result, int> &resultOrIndex);
 
+    // Helper function to generate B sets of subsample indices, each of size k.
+    std::vector<std::vector<int>> _generateSubsampleIndices(int n, int k, int B);
+
     /**
-     * Main learning method, run baseLearner on B subsamples of size k.
+     * Helper function to learn on a single subsample.
+     * Receive the full sample and the indices to the subsample.
+     * Return a Result or an int (index of the result).
+     */
+    std::variant<Result, int> _processSingleSubsample(const Sample &sample,
+                                                      const std::vector<int> &indices,
+                                                      int subsampleIndex);
+    /**
+     * Helper function to launch parallel learners to learn on B subsamples.
+     * Create a vector of futures to hold potentially not-yet-completed results.
+     * Each element of futures will be a vector of pairs (index, result).
+     * result is either a Result or an index to the external storage.
+     * futures has dimension: [numWorkers][numSubsamplesPerWorker].
+     */
+    std::vector<std::future<std::vector<std::pair<int, std::variant<Result, int>>>>>
+        _launchLearningTasks(const Sample &sample, const std::vector<std::vector<int>> &subsampleIndices, int B);
+
+    /**
+     * Helper function to collect results from futures and order them by index.
+     * Return a vector of Result or int (index of the result).
+     */
+    std::vector<std::variant<Result, int>> _collectResultsFromWorkers(
+        std::vector<std::future<std::vector<std::pair<int, std::variant<Result, int>>>>> &futures,
+        int B);
+        
+    /**
+     * Main learning method, run baseLearner on B subsamples of size k by aggregating
+     * the above helper functions.
      * Return a vector of Result or int (index of the result).
      */
     std::vector<std::variant<Result, int>> _learnOnSubsamples(const Sample &sample, int k, int B);

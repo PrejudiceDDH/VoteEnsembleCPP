@@ -64,36 +64,53 @@ Result _BaseVE::_loadResultIfNeeded(const std::variant<Result, int> &resultOrInd
     }
 }
 
-// Main learning method
-std::vector<std::variant<Result, int>> _BaseVE::_learnOnSubsamples(const Sample &sample, int k, int B)
+// Helper function to generate B sets of subsample indices, each of size k.
+std::vector<std::vector<int>> _BaseVE::_generateSubsampleIndices(int n, int k, int B)
 {
-    if (B <= 0)
-        throw std::invalid_argument("_BaseVE::_learnOnSubsamples: Number of subsamples B must be positive.");
-
-    long long n = sample.rows();
-    if (n < k)
-        throw std::invalid_argument("_BaseVE::_learnOnSubsamples: Sample size n must be greater than or equal to k.");
-    else if (k <= 0)
-        throw std::invalid_argument("_BaseVE::_learnOnSubsamples: Subsample size k must be positive.");
-
-    // Generate B sets of subsample indices
     std::vector<std::vector<int>> subsampleIndices(B);
     std::vector<int> nIndices(n);
     std::iota(nIndices.begin(), nIndices.end(), 0); // nIndices = {0, 1, ..., n-1}
+
     for (int b = 0; b < B; ++b)
     {
         subsampleIndices[b].reserve(k);
         // Sample k indices from nIndices
         std::sample(nIndices.begin(), nIndices.end(), std::back_inserter(subsampleIndices[b]), k, _rng);
     }
+    return subsampleIndices;
+}
+
+// Helper function to learn on a single subsample.
+std::variant<Result, int> _BaseVE::_processSingleSubsample(const Sample &sample,
+                                                           const std::vector<int> &indices,
+                                                           int subsampleIndex)
+{ /**
+   * Convert indices to Eigen::VectorXi
+   * Then, create a matrix by selecting rows from sample and learn on it
+   */
+    Eigen::Map<const Eigen::VectorXi> indicesMap(indices.data(), indices.size());
+    Sample subsampleData = sample(indicesMap, Eigen::all);
+    Result learningResult = _baseLearner->learn(subsampleData);
 
     /**
-     * Setup parallel computation
-     * Create a vector of futures to hold potentially not-yet-completed results
-     * Each element of futures will be a vector of pairs (index, result).
-     * result is either a Result or an index to the external storage.
-     * futures has dimension: [numWorkers][numSubsamplesPerWorker]
+     * Store result or dump it and store the index (assume _subsampleResultIO is not null)
+     * Depending on whether the external storage is enabled or not
      */
+    if (_subsampleResultIO->isExternalStorateEnabled())
+    {
+        _subsampleResultIO->_dumpSubsampleResult(learningResult, subsampleIndex);
+        return subsampleIndex; // Store the index if external storage is enabled
+    }
+    else
+    {
+        return std::move(learningResult); // Store the result otherwise
+    }
+}
+
+// Helper function to launch parallel learners to learn on B subsamples.
+std::vector<std::future<std::vector<std::pair<int, std::variant<Result, int>>>>>
+_BaseVE::_launchLearningTasks(const Sample &sample, const std::vector<std::vector<int>> &subsampleIndices, int B)
+{
     int numWorkers = std::min(_numParallelLearn, B);
     std::vector<std::future<std::vector<std::pair<int, std::variant<Result, int>>>>> futures;
     futures.reserve(numWorkers);
@@ -115,24 +132,8 @@ std::vector<std::variant<Result, int>> _BaseVE::_learnOnSubsamples(const Sample 
              * Convert indices to Eigen::VectorXi
              * Then, create a matrix by selecting rows from sample and learn on it
              */
-            const std::vector<int> &indices = subsampleIndices[b];
-            Eigen::Map<const Eigen::VectorXi> indicesMap(indices.data(), indices.size());
-            Sample subsampleData = sample(indicesMap, Eigen::all);
-            Result learningResult = _baseLearner->learn(subsampleData);
-
-            /**
-             * Store result or dump it and store the index (assume _subsampleResultIO is not null)
-             * Depending on whether the external storage is enabled or not
-             */
-            if (_subsampleResultIO->isExternalStorateEnabled())
-            {
-                _subsampleResultIO->_dumpSubsampleResult(learningResult, b);
-                workerResults.emplace_back(b, b); // Store the index if external storage is enabled
-            }
-            else
-            {
-                workerResults.emplace_back(b, std::move(learningResult)); // Store the result otherwise
-            }
+            std::variant<Result, int> resultOrIndex = _processSingleSubsample(sample, subsampleIndices[b], b);
+            workerResults.emplace_back(b, std::move(resultOrIndex));
         }
         return workerResults;
     }; // End of taskLambda
@@ -154,9 +155,17 @@ std::vector<std::variant<Result, int>> _BaseVE::_learnOnSubsamples(const Sample 
         startIndex = endIndex;
     }
 
-    // Collect results from all workers
+    return futures;
+}
+
+// Helper function to collect results from futures and order them by index.
+std::vector<std::variant<Result, int>> _BaseVE::_collectResultsFromWorkers(
+    std::vector<std::future<std::vector<std::pair<int, std::variant<Result, int>>>>> &futures,
+    int B)
+{
     std::vector<std::pair<int, std::variant<Result, int>>> allResults;
     allResults.reserve(B);
+
     try
     {
         for (auto &future : futures)
@@ -189,6 +198,28 @@ std::vector<std::variant<Result, int>> _BaseVE::_learnOnSubsamples(const Sample 
         }
     }
     return allResultsToReturn;
+}
+
+// Main learning method
+std::vector<std::variant<Result, int>> _BaseVE::_learnOnSubsamples(const Sample &sample, int k, int B)
+{
+    if (B <= 0)
+        throw std::invalid_argument("_BaseVE::_learnOnSubsamples: Number of subsamples B must be positive.");
+
+    long long n = sample.rows();
+    if (n < k)
+        throw std::invalid_argument("_BaseVE::_learnOnSubsamples: Sample size n must be greater than or equal to k.");
+    else if (k <= 0)
+        throw std::invalid_argument("_BaseVE::_learnOnSubsamples: Subsample size k must be positive.");
+
+    // Generate B sets of subsample indices, each of size k.
+    std::vector<std::vector<int>> subsampleIndices = _generateSubsampleIndices(n, k, B);
+
+    // Launch parallel learners to learn on B subsamples.
+    auto futures = _launchLearningTasks(sample, subsampleIndices, B);
+
+    // Collect results from futures and order them by index.
+    return _collectResultsFromWorkers(futures, B);
 }
 
 // Pure virtual base method, cannot be called directly

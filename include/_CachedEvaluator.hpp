@@ -51,6 +51,36 @@ private:
      */
     Result _loadCandidate(size_t candidateIndex) const;
 
+    /**
+     * Helper function to generate B sets of subsample indices, each of size k.
+     * Returns 1. A vector of vector, that contains B sets of subsample indices.
+     *         2. A vector of indices, that contains the unique sample indices to be evaluated on.
+     */
+    std::pair<std::vector<std::vector<int>>, std::vector<int>>
+    _generateEvaluationSampleIndices(const std::vector<int> &sampleIndexList, int k, int B, std::mt19937 &rng);
+
+    /**
+     * Helper function to evaluate all candidates on given samples.
+     * This function is called by the individual worker threads to evaluate their assigned samples.
+     * Returns a Matrix of size (numSamplesAssigned, numCandidates).
+     */
+    Matrix _evaluateCandidatesOnSamples(const std::vector<int> &uniqueSampleIndices);
+
+    /**
+     * Helper function to get cached evaluation results in parallel.
+     * Setup parallel workers to evaluate all candidates on unique samples.
+     * The parallel computation is similar to _learnOnSubsamples in _BaseVE
+     * Store the results in _cachedEvaluation.
+     */
+    void _getCachedEvaluation(const std::vector<int>& sampleToEvaluate);
+
+    /**
+     * Helper function to compute the final evaluation results on subsamples.
+     * The computation is based on the _cachedEvaluation map.
+     * Return a matrix of size (B, num_candidates), as required by _evaluateSubsamples.
+     */
+    Matrix _getFinalEvaluationResults(const std::vector<std::vector<int>> &subsampleIndices, int B);
+
 public:
     // Constructor
     _CachedEvaluator(BaseLearner *baseLearner,
