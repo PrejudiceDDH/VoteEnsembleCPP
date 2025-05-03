@@ -200,6 +200,36 @@ std::vector<std::variant<Result, int>> _BaseVE::_collectResultsFromWorkers(
     return allResultsToReturn;
 }
 
+// Helper function to clean up the subsample results if external storage is enabled
+void _BaseVE::_cleanupSubsampleResults(const std::vector<std::variant<Result, int>> &learningResults)
+{
+    if (_deleteSubsampleResults &&
+        _subsampleResultIO &&
+        _subsampleResultIO->isExternalStorateEnabled())
+    {
+
+        std::vector<int> indicesToDelete;
+        indicesToDelete.reserve(learningResults.size());
+        for (const auto &resultOrIndex : learningResults)
+        {
+            /**
+             * Check if the result is an index.
+             * If it is, we need to delete the corresponding result from external storage
+             * Otherwise, it is a Result and is only held in memory
+             */
+            if (std::holds_alternative<int>(resultOrIndex))
+            {
+                indicesToDelete.push_back(std::get<int>(resultOrIndex));
+            }
+        }
+
+        if (!indicesToDelete.empty())
+        {
+            _subsampleResultIO->_deleteSubsampleResult(indicesToDelete);
+        }
+    }
+}
+
 // Main learning method
 std::vector<std::variant<Result, int>> _BaseVE::_learnOnSubsamples(const Sample &sample, int k, int B)
 {

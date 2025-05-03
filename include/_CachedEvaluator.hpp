@@ -57,7 +57,7 @@ private:
      *         2. A vector of indices, that contains the unique sample indices to be evaluated on.
      */
     std::pair<std::vector<std::vector<int>>, std::vector<int>>
-    _generateEvaluationSampleIndices(const std::vector<int> &sampleIndexList, int k, int B, std::mt19937 &rng);
+    _generateEvaluationSampleIndices(const std::vector<int> &sampleIndexList, int B, int k, std::mt19937 &rng);
 
     /**
      * Helper function to evaluate all candidates on given samples.
@@ -72,7 +72,7 @@ private:
      * The parallel computation is similar to _learnOnSubsamples in _BaseVE
      * Store the results in _cachedEvaluation.
      */
-    void _getCachedEvaluation(const std::vector<int>& sampleToEvaluate);
+    void _getCachedEvaluation(const std::vector<int> &sampleToEvaluate);
 
     /**
      * Helper function to compute the final evaluation results on subsamples.
@@ -94,5 +94,5 @@ public:
      * Each row corresponds to the evaluation of all candidates on a specific subsample
      * sampleIndexList stores indices of the samples used in the evaluation
      */
-    Matrix _evaluateSubsamples(const std::vector<int> &sampleIndexList, int k, int B, std::mt19937 &rng);
+    Matrix _evaluateSubsamples(const std::vector<int> &sampleIndexList, int B, int k, std::mt19937 &rng);
 };

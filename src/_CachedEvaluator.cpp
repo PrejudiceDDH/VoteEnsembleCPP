@@ -55,7 +55,7 @@ Result _CachedEvaluator::_loadCandidate(size_t candidateIndex) const
 // Helper function to generate B sets of subsample indices, each of size k.
 std::pair<std::vector<std::vector<int>>, std::vector<int>>
 _CachedEvaluator::_generateEvaluationSampleIndices(const std::vector<int> &sampleIndexList,
-                                                   int k, int B, std::mt19937 &rng)
+                                                   int B, int k, std::mt19937 &rng)
 {
     size_t n = sampleIndexList.size();
     std::set<int> sampleToEvaluateSet;
@@ -231,7 +231,7 @@ Matrix _CachedEvaluator::_getFinalEvaluationResults(const std::vector<std::vecto
 }
 
 // Main evaluation method
-Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndexList, int k, int B, std::mt19937 &rng)
+Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndexList, int B, int k, std::mt19937 &rng)
 {
     if (B <= 0)
         throw std::invalid_argument("_CachedEvaluator::_evaluateSubsamples: Number of subsamples B must be positive.");
@@ -245,7 +245,7 @@ Matrix _CachedEvaluator::_evaluateSubsamples(const std::vector<int> &sampleIndex
      * sampleToEvaluate stores the unique sample indices to be evaluated on
      * (_generateEvaluationSampleIndices automatically checks whether sampleIndexList is empty)
      */
-    auto [subsampleIndices, sampleToEvaluate] = _generateEvaluationSampleIndices(sampleIndexList, k, B, rng);
+    auto [subsampleIndices, sampleToEvaluate] = _generateEvaluationSampleIndices(sampleIndexList, B, k, rng);
 
     // Get cached evaluation results in parallel, store them in _cachedEvaluation
     _getCachedEvaluation(sampleToEvaluate);

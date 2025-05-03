@@ -16,7 +16,7 @@ class _SubsampleResultIO; // Used in _learnOnSubsamples and _loadResultIfNeeded
 /**
  * _BaseVE stands for Base VoteEnsemble, which serves as the base class for main algorithms MoVE and ROVE.
  * Note that in the current implementation, _BaseVE, MoVE, and ROVE do not
- * hold sample as a member variable. Instead, they are passed as arguments to the run method.
+ * hold sample as a member variable. Instead, they are passed as arguments to the run function.
  */
 class _BaseVE
 {
@@ -65,7 +65,7 @@ protected: // Ensure those members are accessible to derived classes (MoVE and R
      * futures has dimension: [numWorkers][numSubsamplesPerWorker].
      */
     std::vector<std::future<std::vector<std::pair<int, std::variant<Result, int>>>>>
-        _launchLearningTasks(const Sample &sample, const std::vector<std::vector<int>> &subsampleIndices, int B);
+    _launchLearningTasks(const Sample &sample, const std::vector<std::vector<int>> &subsampleIndices, int B);
 
     /**
      * Helper function to collect results from futures and order them by index.
@@ -74,7 +74,10 @@ protected: // Ensure those members are accessible to derived classes (MoVE and R
     std::vector<std::variant<Result, int>> _collectResultsFromWorkers(
         std::vector<std::future<std::vector<std::pair<int, std::variant<Result, int>>>>> &futures,
         int B);
-        
+
+    // Helper function to clean up the subsample results if external storage is enabled.
+    void _cleanupSubsampleResults(const std::vector<std::variant<Result, int>> &learningResults);
+
     /**
      * Main learning method, run baseLearner on B subsamples of size k by aggregating
      * the above helper functions.

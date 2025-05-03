@@ -37,7 +37,7 @@ void runLRExample()
     // Run ROVE and ROVEs (default parameters with external storage disabled)
     runROVE("ROVE", baseLearnerPtr, sample, false, numThreads, algSeed);
     runROVE("ROVEs", baseLearnerPtr, sample, true, numThreads, algSeed);
-    
+
     // Run ROVE and ROVEs (default parameters with external storage enabled)
     // runROVE("ROVE", baseLearnerPtr, sample, false, numThreads, algSeed, subsampleResultsDir + "/ROVE", false);
     // runROVE("ROVEs", baseLearnerPtr, sample, true, numThreads, algSeed, subsampleResultsDir + "/ROVEs", false);
@@ -73,16 +73,16 @@ void runLPExample()
     runROVE("ROVEs", baseLearnerPtr, sample, true, numThreads, algoSeed);
 
     // Run MoVE, ROVE, and ROVEs (default parameters with external storage enabled)
-    // runMoVE("MoVE", baseLearnerPtr, sample, numThreads, algoSeed, subsampleResultsDir + "/MoVE", false);
-    // runROVE("ROVE", baseLearnerPtr, sample, false, numThreads, algoSeed, subsampleResultsDir + "/ROVE", false);
-    // runROVE("ROVEs", baseLearnerPtr, sample, true, numThreads, algoSeed, subsampleResultsDir + "/ROVEs", false);
+    // runMoVE("MoVE", baseLearnerPtr, sample, numThreads, algoSeed, subsampleResultsDir + "/MoVE", true);
+    // runROVE("ROVE", baseLearnerPtr, sample, false, numThreads, algoSeed, subsampleResultsDir + "/ROVE", true);
+    // runROVE("ROVEs", baseLearnerPtr, sample, true, numThreads, algoSeed, subsampleResultsDir + "/ROVEs", true);
     std::cout << "\nVoteEnsemble on Linear Program completed." << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
     auto start = std::chrono::high_resolution_clock::now();
-    
+
     if (argc != 2)
     {
         std::cerr << "Usage: " << argv[0] << " <ExampleName>" << std::endl;
