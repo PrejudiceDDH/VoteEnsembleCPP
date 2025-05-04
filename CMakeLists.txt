@@ -9,6 +9,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# --- Set Default Build Type to Release ---
+# If the user doesn't specify a build type, default to Release.
+# This is especially useful for single-configuration generators like Makefiles or Ninja.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug, Release, RelWithDebInfo, MinSizeRel)." FORCE)
+  # Set the possible values for command-line tools/GUIs
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+endif()
+
 # Find required packages
 # We still call find_package to potentially find the library correctly,
 # but we won't rely on it for the include path.
